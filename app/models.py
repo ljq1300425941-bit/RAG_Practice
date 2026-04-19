@@ -1,4 +1,5 @@
 from dataclasses import dataclass
+import numpy as np
 
 @dataclass
 class DocumentChunk:
@@ -7,3 +8,8 @@ class DocumentChunk:
     text: str
     start_pos: int
     end_pos: int
+
+@dataclass
+class ChunkEmbedding:
+    chunk:DocumentChunk
+    embedding:np.ndarray

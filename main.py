@@ -2,7 +2,7 @@ from pathlib import Path
 
 from app.cli import parse_args
 from app.splitter import build_chunks_from_dir
-from app.retriever import retrieve_topk
+from app.retriever import build_chunk_embeddings, retrieve_topk_from_embeddings
 from app.vectorizer import KeywordCountVectorizer, EmbeddingVectorizer
 
 
@@ -37,13 +37,17 @@ def main():
     )
 
     print(f"共构建 {len(chunks)} 个 chunks")
-    print("\n开始检索...\n")
 
     vectorizer = build_vectorizer(args)
+    chunk_embeddings = build_chunk_embeddings(chunks, vectorizer)
 
-    results = retrieve_topk(
+    print(f"已预计算 {len(chunk_embeddings)} 个 chunk embeddings")
+    print("\n开始检索...\n")
+
+
+    results = retrieve_topk_from_embeddings(
         query=args.query,
-        chunks=chunks,
+        chunk_embeddings=chunk_embeddings,
         vectorizer=vectorizer,
         k=args.top_k,
     )

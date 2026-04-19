@@ -1,6 +1,6 @@
 import numpy as np
 
-from app.models import DocumentChunk
+from app.models import DocumentChunk, ChunkEmbedding
 
 
 def cosine_similarity(a: np.ndarray, b: np.ndarray) -> float:
@@ -12,15 +12,32 @@ def cosine_similarity(a: np.ndarray, b: np.ndarray) -> float:
 
     return float(np.dot(a, b) / (norm_a * norm_b))
 
+def build_chunk_embeddings(chunks:list[DocumentChunk],vectorizer) -> list[ChunkEmbedding]:
+    chunk_embeddings = []
 
-def retrieve_topk(query: str, chunks: list[DocumentChunk], vectorizer, k: int):
+    for chunk in chunks:
+        embedding = vectorizer.encode(chunk.text)
+        chunk_embeddings.append(
+            ChunkEmbedding(
+                chunk=chunk,
+                embedding=embedding,
+            )
+        )
+
+    return chunk_embeddings
+
+def retrieve_topk_from_embeddings(
+    query: str,
+    chunk_embeddings: list[ChunkEmbedding],
+    vectorizer,
+    k: int,
+):
     query_vec = vectorizer.encode(query)
     results = []
 
-    for chunk in chunks:
-        chunk_vec = vectorizer.encode(chunk.text)
-        score = cosine_similarity(query_vec, chunk_vec)
-        results.append((chunk, score))
+    for item in chunk_embeddings:
+        score = cosine_similarity(query_vec, item.embedding)
+        results.append((item.chunk, score))
 
     results.sort(key=lambda x: (-x[1], x[0].chunk_id))
     return results[:k]
