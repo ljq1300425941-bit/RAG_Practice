@@ -7,4 +7,17 @@ def parse_args():
     parser.add_argument("--chunk_size", type=int, default=30, help="chunk 大小")
     parser.add_argument("--overlap", type=int, default=5, help="chunk 重叠长度")
     parser.add_argument("--top_k", type=int, default=3, help="返回前 k 个结果")
+    parser.add_argument(
+        "--vectorizer",
+        type=str,
+        default="keyword",
+        choices=["keyword", "embedding"],
+        help="向量化方式：keyword 或 embedding",
+    )
+    parser.add_argument(
+        "--model_name",
+        type=str,
+        default="sentence-transformers/all-MiniLM-L6-v2",
+        help="embedding 模型名，仅 embedding 模式生效",
+    )
     return parser.parse_args()

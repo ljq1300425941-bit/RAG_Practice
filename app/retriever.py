@@ -1,6 +1,6 @@
-from app.models import DocumentChunk
-from app.vectorizer import text_to_vector
 import numpy as np
+
+from app.models import DocumentChunk
 
 
 def cosine_similarity(a: np.ndarray, b: np.ndarray) -> float:
@@ -13,12 +13,12 @@ def cosine_similarity(a: np.ndarray, b: np.ndarray) -> float:
     return float(np.dot(a, b) / (norm_a * norm_b))
 
 
-def retrieve_topk(query: str, chunks: list[DocumentChunk], vocab: list[str], k: int):
-    query_vec = text_to_vector(query, vocab)
+def retrieve_topk(query: str, chunks: list[DocumentChunk], vectorizer, k: int):
+    query_vec = vectorizer.encode(query)
     results = []
 
     for chunk in chunks:
-        chunk_vec = text_to_vector(chunk.text, vocab)
+        chunk_vec = vectorizer.encode(chunk.text)
         score = cosine_similarity(query_vec, chunk_vec)
         results.append((chunk, score))
 

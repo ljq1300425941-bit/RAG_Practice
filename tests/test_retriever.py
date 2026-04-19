@@ -1,37 +1,29 @@
-from app.splitter import split_text_to_chunks
+from app.models import DocumentChunk
+from app.retriever import retrieve_topk
+from app.vectorizer import KeywordCountVectorizer
 
 
-def test_split_text_to_chunks_basic():
-    text = "abcdefghijklmnopqrstuvwxyz"
-    chunks = split_text_to_chunks(
-        text=text,
-        source_file="test.txt",
-        chunk_size=10,
-        overlap=2,
+def test_retrieve_topk_basic():
+    chunks = [
+        DocumentChunk("c1", "a.txt", "numpy 向量", 0, 10),
+        DocumentChunk("c2", "b.txt", "数据库 事务", 0, 10),
+        DocumentChunk("c3", "c.txt", "相似度 检索 向量", 0, 10),
+    ]
+
+    vectorizer = KeywordCountVectorizer(
+        vocab=["numpy", "向量", "相似度", "数据库", "检索"]
     )
+    results = retrieve_topk("numpy 相似度 向量", chunks, vectorizer, 2)
 
-    assert len(chunks) > 0
-    assert chunks[0].source_file == "test.txt"
-    assert chunks[0].chunk_id.startswith("test_chunk_")
-    assert chunks[0].start_pos == 0
-    assert chunks[0].end_pos == 10
+    assert len(results) == 2
+    assert results[0][1] >= results[1][1]
 
 
-def test_split_text_to_chunks_empty_text():
-    chunks = split_text_to_chunks(
-        text="",
-        source_file="test.txt",
-        chunk_size=10,
-        overlap=2,
-    )
-    assert chunks == []
+def test_retrieve_topk_k_too_large():
+    chunks = [
+        DocumentChunk("c1", "a.txt", "numpy 向量", 0, 10),
+    ]
+    vectorizer = KeywordCountVectorizer(vocab=["numpy", "向量"])
+    results = retrieve_topk("numpy", chunks, vectorizer, 5)
 
-
-def test_split_text_to_chunks_invalid_step():
-    chunks = split_text_to_chunks(
-        text="abcdefg",
-        source_file="test.txt",
-        chunk_size=4,
-        overlap=4,
-    )
-    assert chunks == []
+    assert len(results) == 1
