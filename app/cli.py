@@ -1,0 +1,10 @@
+import argparse
+
+def parse_args():
+    parser = argparse.ArgumentParser(description="Simple document retrieval demo")
+    parser.add_argument("--input_dir", type=str, required=True, help="输入文档目录")
+    parser.add_argument("--query", type=str, required=True, help="检索查询")
+    parser.add_argument("--chunk_size", type=int, default=30, help="chunk 大小")
+    parser.add_argument("--overlap", type=int, default=5, help="chunk 重叠长度")
+    parser.add_argument("--top_k", type=int, default=3, help="返回前 k 个结果")
+    return parser.parse_args()
