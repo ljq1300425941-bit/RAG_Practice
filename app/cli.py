@@ -20,4 +20,11 @@ def parse_args():
         default="sentence-transformers/all-MiniLM-L6-v2",
         help="embedding 模型名，仅 embedding 模式生效",
     )
+    parser.add_argument(
+        "--mode",
+        type=str,
+        default="retrieve",
+        choices=["retrieve", "rag"],
+        help="运行模式：retrieve 或 rag",
+    )
     return parser.parse_args()
