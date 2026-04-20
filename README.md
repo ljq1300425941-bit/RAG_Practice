@@ -1,10 +1,10 @@
-# 简易文档检索原型（README V2）
+# 简易文档检索 / RAG 原型（README V3.1）
 
-一个基于 Python 实现的简易文档检索原型，支持从目录中读取多个 `.txt` 文本文件，进行 chunk 切分、向量化、相似度计算，并返回 top-k 检索结果。
+一个基于 Python 实现的简易文档检索 / RAG 原型，支持从目录中读取多个 `.txt` 文本文件，进行 chunk 切分、向量化、相似度计算、top-k 检索，并在此基础上构建最小 RAG 闭环。
 
-当前版本的重点是逐步从“最小可运行检索 demo”升级到“更接近真实语义检索系统的原型”，整体演进路线如下：
+当前版本重点不在于堆叠复杂框架，而是逐步完成一条清晰、可运行、可扩展的工程链路：
 
-> 文档读取 → chunk 切分 → metadata 管理 → 向量化 → 相似度计算 → top-k 检索 → embedding 升级 → chunk embedding 预计算
+> 文档读取 → chunk 切分 → metadata 管理 → 向量化 → 相似度计算 → top-k 检索 → embedding 升级 → chunk embedding 预计算 → 最小 RAG 闭环
 
 ---
 
@@ -20,9 +20,14 @@
   - `embedding`：真实 embedding 向量
 - 使用余弦相似度计算 query 与 chunk 的相关性
 - 返回 top-k 检索结果
-- 支持命令行参数指定输入目录、query、chunk 参数、top-k 和向量化模式
 - 对 chunk embeddings 做预计算，避免查询时重复编码全部文档
-- 提供基础测试，验证 splitter 与 retriever 主流程
+- 支持两种运行模式：
+  - `retrieve`：仅输出检索结果
+  - `rag`：检索后构造上下文并生成回答
+- 支持两种生成方式：
+  - `mock`：基于检索结果输出回答草稿
+  - `llm`：预留真实 LLM generator 接口
+- 提供基础测试，覆盖 splitter、retriever、prompt builder、generator 等主流程
 
 ---
 
@@ -39,6 +44,8 @@ RAG_Practice/
     vectorizer.py
     retriever.py
     cli.py
+    prompt_builder.py
+    generator.py
   data/
     a.txt
     b.txt
@@ -46,6 +53,8 @@ RAG_Practice/
   tests/
     test_splitter.py
     test_retriever.py
+    test_prompt_builder.py
+    test_generator.py
   requirements.txt
   README.md
 ```
@@ -62,14 +71,14 @@ RAG_Practice/
 
 其中：
 
-- `DocumentChunk` 用于表示切分后的文本块，包含：
+- `DocumentChunk` 表示切分后的文本块，包含：
   - `chunk_id`
   - `source_file`
   - `text`
   - `start_pos`
   - `end_pos`
 
-- `ChunkEmbedding` 用于表示：
+- `ChunkEmbedding` 表示：
   - 一个 `DocumentChunk`
   - 它对应的向量表示 `embedding`
 
@@ -156,6 +165,47 @@ RAG_Practice/
 
 ---
 
+### `prompt_builder.py`
+负责构造 RAG prompt。
+
+输入：
+
+- 用户问题 `query`
+- 检索得到的 top-k chunks
+
+输出：
+
+- 一个结构化 prompt，用于后续回答生成
+
+当前 prompt 约束包括：
+
+- 仅根据给定上下文回答
+- 信息不足时明确说明无法确定
+- 不编造上下文中没有的信息
+
+---
+
+### `generator.py`
+负责回答生成。
+
+当前版本支持两种生成方式：
+
+#### 1）`mock`
+不依赖外部 API，直接基于检索结果组织出回答草稿。
+
+优点：
+
+- 便于本地演示
+- 不依赖 API key
+- 可以快速验证 RAG 主链路是否打通
+
+#### 2）`llm`
+预留真实 LLM generator 接口，结构上已经支持接入真实模型生成回答。
+
+当前版本由于未继续推进 API 侧配置与额度问题，因此项目默认以 `mock` 方式作为主演示路径，`llm` 作为后续升级方向保留。
+
+---
+
 ### `cli.py`
 负责命令行参数解析。
 
@@ -168,6 +218,11 @@ RAG_Practice/
 - `--top_k`
 - `--vectorizer`
 - `--model_name`
+- `--mode`
+- `--generator`
+- `--llm_model`
+- `--api_key`
+- `--base_url`
 
 ---
 
@@ -179,7 +234,13 @@ RAG_Practice/
 3. 选择 vectorizer
 4. 预计算 chunk embeddings
 5. 执行检索
-6. 打印结果
+6. 根据 `mode` 选择：
+   - 输出检索结果
+   - 或进入 RAG 流程
+7. 若进入 RAG：
+   - 构造 prompt
+   - 生成回答
+   - 输出引用来源
 
 ---
 
@@ -227,6 +288,33 @@ RAG_Practice/
 
 ---
 
+### V3：最小 RAG 闭环
+在 retrieval 稳定后，第三阶段继续向上补全 generation 链路，加入：
+
+- top-k chunk 检索
+- prompt 构造
+- 基于检索结果生成回答
+- 输出引用来源
+
+这一阶段的重点不是追求复杂回答能力，而是先把 **retrieval → generation** 的主链路打通。
+
+---
+
+### V3.1：保留 mock generator，预留真实 LLM 接口
+在 V3 基础上，项目进一步支持：
+
+- `mock` generator：用于稳定演示最小 RAG 闭环
+- `llm` generator：保留真实 LLM 接口与参数入口
+
+考虑到当前阶段更关注项目完整度、可运行性和可讲解性，而不希望在 API 配额、账单与平台配置上继续投入过多时间，因此当前版本将：
+
+- `mock` 作为主演示路径
+- `llm` 作为预留升级能力
+
+这也是当前版本定名为 **V3.1** 的主要原因。
+
+---
+
 ## 5. 核心流程
 
 当前版本整体流程如下：
@@ -248,7 +336,15 @@ query 编码
    ↓
 余弦相似度计算
    ↓
-按分数排序，返回 top-k
+按分数排序，得到 top-k
+   ↓
+若 mode=retrieve：直接输出检索结果
+   ↓
+若 mode=rag：构造 prompt
+   ↓
+根据 generator 生成回答
+   ↓
+输出 answer 与 references
 ```
 
 ---
@@ -267,33 +363,50 @@ pip install -r requirements.txt
 numpy
 pytest
 sentence-transformers
+openai
 ```
+
+如果当前仅使用 `mock` generator，本地即使暂不配置 API 也可以正常演示核心流程。
 
 ---
 
 ## 7. 运行方式
 
-### keyword 模式
+### 7.1 仅检索模式（keyword）
 
 ```bash
-python main.py --input_dir data --query "numpy 向量 相似度" --chunk_size 30 --overlap 5 --top_k 3 --vectorizer keyword
+python main.py --mode retrieve --input_dir data --query "向量接近程度怎么衡量" --chunk_size 30 --overlap 5 --top_k 3 --vectorizer keyword
 ```
 
-### embedding 模式
+---
+
+### 7.2 仅检索模式（embedding）
 
 ```bash
-python main.py --input_dir data --query "向量接近程度怎么衡量" --chunk_size 30 --overlap 5 --top_k 3 --vectorizer embedding --model_name sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2
+python main.py --mode retrieve --input_dir data --query "向量接近程度怎么衡量" --chunk_size 30 --overlap 5 --top_k 3 --vectorizer embedding --model_name sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2
 ```
 
-参数说明：
+---
 
-- `input_dir`：输入文档目录
-- `query`：检索查询
-- `chunk_size`：每个 chunk 的长度
-- `overlap`：相邻 chunk 的重叠长度
-- `top_k`：返回前 k 个最相关结果
-- `vectorizer`：向量化方式，支持 `keyword` / `embedding`
-- `model_name`：embedding 模型名称，仅 embedding 模式生效
+### 7.3 最小 RAG 闭环（mock）
+
+```bash
+python main.py --mode rag --generator mock --input_dir data --query "向量接近程度怎么衡量" --chunk_size 30 --overlap 5 --top_k 3 --vectorizer embedding --model_name sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2
+```
+
+---
+
+### 7.4 预留的真实生成模式（llm）
+
+```bash
+python main.py --mode rag --generator llm --input_dir data --query "向量接近程度怎么衡量" --chunk_size 30 --overlap 5 --top_k 3 --vectorizer embedding --model_name sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2 --llm_model gpt-4.1-mini
+```
+
+说明：
+
+- 当前版本结构上支持 `llm` generator
+- 但项目主演示路径默认使用 `mock`
+- 若后续要继续推进 `llm`，建议使用环境变量配置 API key，而不是在命令行中明文传入
 
 ---
 
@@ -305,7 +418,18 @@ python main.py --input_dir data --query "向量接近程度怎么衡量" --chunk
 pytest
 ```
 
-当前测试已通过，覆盖 splitter 与 retriever 的基础主流程。
+当前测试已覆盖：
+
+- `splitter`
+- `retriever`
+- `prompt_builder`
+- `generator`
+
+在当前版本中，测试主要验证的是：
+
+- 检索与切分主流程正确
+- prompt 构造结果包含 query / chunk / metadata
+- mock generator 在有无上下文时都能正常返回结果
 
 ---
 
@@ -374,20 +498,63 @@ pytest
 
 ---
 
-## 10. 当前版本的局限
+## 10. RAG 模式说明
 
-当前版本是一个具备基础工程结构的简易语义检索原型，但仍有一些明显限制：
+当前版本的 `rag` 模式已经可以完成：
+
+- 根据 query 检索 top-k chunks
+- 将 chunks 组织为结构化 prompt
+- 基于 prompt 生成回答
+- 输出引用来源
+
+其中：
+
+### `mock` generator 的价值
+`mock` 版虽然不调用真实 LLM，但它的意义并不是“凑功能”，而是：
+
+- 先验证 RAG 主链路是否完整
+- 让 retrieval 结果可以真正影响最终回答上下文
+- 在不依赖外部 API 的情况下稳定演示整个流程
+
+从当前运行结果看：
+
+- embedding 模式下的 RAG 上下文更合理
+- keyword 模式下的 RAG 上下文更容易被字面匹配误导
+
+这也进一步说明 retrieval 质量会直接影响 generation 质量。
+
+### `llm` generator 的当前状态
+当前版本结构上已支持真实 LLM generator，但由于本阶段不再继续投入到：
+
+- API 配额
+- 账单配置
+- 平台参数调试
+
+因此项目在实际演示与交付层面，仍以 `mock` 为主。
+
+这个取舍是有意为之，核心目的是：
+
+- 保证项目主链路完整
+- 控制实现复杂度
+- 把精力集中在检索与 RAG 框架本身，而不是外部 API 运维细节
+
+---
+
+## 11. 当前版本的局限
+
+当前版本是一个具备基础工程结构的简易文档检索 / RAG 原型，但仍有一些明显限制：
 
 1. 仅支持 `.txt` 文件
 2. 仅支持固定长度 chunking
 3. 数据集很小，评估仍以人工观察为主
-4. 目前只做了 top-k 检索，还没有接入 answer generation
-5. 还没有接入向量数据库或持久化索引
-6. embedding 模式虽已初步可用，但模型选型和检索评估仍可进一步优化
+4. `mock` generator 不是正式 LLM 回答，只是用于打通和演示最小 RAG 闭环
+5. `llm` generator 虽然结构上已经预留，但当前未作为主完成项推进
+6. 还没有接入向量数据库或持久化索引
+7. 还没有系统化评估 RAG 回答质量
 
 ---
 
-## 11. 后续优化方向
+## 12. 后续优化方向
 
 后续可以继续沿以下方向推进：
 
@@ -413,12 +580,13 @@ pytest
 - 构建更系统的人工标注
 - 统计不同模式下的命中质量
 
-### 方向 4：接入 RAG 生成回答
-在检索结果基础上进一步实现：
+### 方向 4：继续推进真实生成
+在已有 `llm` generator 预留基础上，后续如果需要，可以继续完善：
 
-- 检索结果拼接
-- prompt 构造
-- 接入 LLM 回答生成
+- API 配置方式
+- 真实回答调用
+- 生成质量评估
+- 引用与回答联动
 
 ### 方向 5：引入向量索引或向量数据库
 当数据规模进一步增大后，可继续尝试：
@@ -429,9 +597,9 @@ pytest
 
 ---
 
-## 12. 项目总结
+## 13. 项目总结
 
-这个项目当前已经从一个“最小可运行检索 demo”升级为一个具备基础工程结构的简易语义检索原型，完成了：
+这个项目当前已经从一个“最小可运行检索 demo”升级为一个具备基础工程结构的简易文档检索 / RAG 原型，完成了：
 
 - 文档读取
 - 文本切分
@@ -440,8 +608,16 @@ pytest
 - 余弦相似度计算
 - top-k 检索
 - chunk embedding 预计算
+- retrieval / rag 双模式
+- prompt 构造
+- mock / llm 双 generator 结构
 - 命令行调用
 - 基础测试
 - 初步效果对比与分析
 
-当前版本虽然仍然轻量，但已经具备清晰的演进路径，也为后续升级到更完整的 RAG 原型打下了基础。
+当前版本虽然仍然轻量，但已经具备：
+
+- 清晰的演进路径
+- 可运行的演示方式
+- 可讲解的项目叙事
+- 向更完整 RAG 系统继续扩展的基础
