@@ -5,7 +5,7 @@ from app.splitter import build_chunks_from_dir
 from app.retriever import build_chunk_embeddings, retrieve_topk_from_embeddings
 from app.vectorizer import KeywordCountVectorizer, EmbeddingVectorizer
 from app.prompt_builder import build_rag_prompt
-from app.generator import generate_mock_answer
+from app.generator import generate_answer
 
 
 def build_vectorizer(args):
@@ -67,11 +67,17 @@ def main():
 
     elif args.mode == "rag":
         prompt = build_rag_prompt(args.query, retrieved_chunks)
-        answer = generate_mock_answer(args.query, retrieved_chunks)
+        answer = generate_answer(
+            query=args.query,
+            chunks=retrieved_chunks,
+            prompt=prompt,
+            generator_type=args.generator,
+            llm_model=args.llm_model,
+            api_key=args.api_key,
+            base_url=args.base_url,
+        )
 
-        print("=== Prompt ===")
-        print(prompt)
-        print("\n=== Answer ===")
+        print("=== Answer ===")
         print(answer)
 
         print("\n=== References ===")
