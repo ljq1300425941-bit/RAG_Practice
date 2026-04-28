@@ -56,4 +56,33 @@ def parse_args():
         help="可选，自定义 LLM 接口地址",
     )
 
+    parser.add_argument(
+        "--reranker",
+        type=str,
+        default="none",
+        choices=["none", "cross_encoder"],
+        help="Reranker type. Currently supports: none"
+    )
+
+    parser.add_argument(
+        "--rerank_top_n",
+        type=int,
+        default=5,
+        help="Number of chunks kept after reranking"
+    )
+
+    parser.add_argument(
+        "--retrieve_top_k",
+        type=int,
+        default=30,
+        help="Number of candidate chunks retrieved before reranking"
+    )
+
+    parser.add_argument(
+        "--reranker_model",
+        type=str,
+        default="BAAI/bge-reranker-base",
+        help="reranker 模型名，仅 cross_encoder reranker 生效"
+    )
+
     return parser.parse_args()

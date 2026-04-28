@@ -1,5 +1,5 @@
 import numpy as np
-
+from app.schema import RetrievedChunk
 from app.models import DocumentChunk, ChunkEmbedding
 
 
@@ -31,13 +31,22 @@ def retrieve_topk_from_embeddings(
     chunk_embeddings: list[ChunkEmbedding],
     vectorizer,
     k: int,
-):
+) -> list[RetrievedChunk]:
     query_vec = vectorizer.encode(query)
-    results = []
+    results: list[RetrievedChunk] = []
 
     for item in chunk_embeddings:
         score = cosine_similarity(query_vec, item.embedding)
-        results.append((item.chunk, score))
 
-    results.sort(key=lambda x: (-x[1], x[0].chunk_id))
+        results.append(
+            RetrievedChunk(
+                chunk_id=item.chunk.chunk_id,
+                text=item.chunk.text,
+                source_file=item.chunk.source_file,
+                retrieval_score=score,
+                rerank_score=None,
+            )
+        )
+
+    results.sort(key=lambda x: (-x.retrieval_score, x.chunk_id))
     return results[:k]

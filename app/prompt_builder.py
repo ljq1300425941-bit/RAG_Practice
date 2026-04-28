@@ -1,7 +1,7 @@
-from app.models import DocumentChunk
+from app.schema import RetrievedChunk
 
 
-def build_rag_prompt(query: str, chunks: list[DocumentChunk]) -> str:
+def build_rag_prompt(query: str, chunks: list[RetrievedChunk]) -> str:
     context_parts = []
 
     for i, chunk in enumerate(chunks, start=1):

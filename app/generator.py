@@ -1,9 +1,9 @@
 import os
 
-from app.models import DocumentChunk
+from app.schema import RetrievedChunk
 
 
-def generate_mock_answer(query: str, chunks: list[DocumentChunk]) -> str:
+def generate_mock_answer(query: str, chunks: list[RetrievedChunk]) -> str:
     if not chunks:
         return "根据当前检索到的资料，无法确定。"
 
@@ -67,7 +67,7 @@ def generate_llm_answer(
 def generate_answer(
     *,
     query: str,
-    chunks: list[DocumentChunk],
+    chunks: list[RetrievedChunk],
     prompt: str,
     generator_type: str,
     llm_model: str | None = None,
