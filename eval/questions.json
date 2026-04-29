@@ -1,0 +1,22 @@
+[
+  {
+    "query": "两个向量相不相近一般看什么指标",
+    "expected_chunk_ids": ["b_chunk_0"]
+  },
+  {
+    "query": "怎么判断检索结果和问题是否相关",
+    "expected_chunk_ids": ["b_chunk_0"]
+  },
+  {
+    "query": "Python 做科学计算常用什么库",
+    "expected_chunk_ids": ["a_chunk_0"]
+  },
+  {
+    "query": "事务在数据库里解决什么问题",
+    "expected_chunk_ids": ["c_chunk_0"]
+  },
+  {
+    "query": "RAG 里面为什么检索质量会影响回答",
+    "expected_chunk_ids": ["b_chunk_0", "b_chunk_1"]
+  }
+]
