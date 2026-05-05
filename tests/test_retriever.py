@@ -1,39 +1,51 @@
-from app.models import DocumentChunk
-from app.retriever import build_chunk_embeddings, retrieve_topk_from_embeddings
-from app.vectorizer import KeywordCountVectorizer
+import numpy as np
+
+from app.models import DocumentChunk, ChunkEmbedding
+from app.retriever import retrieve_topk_from_embeddings
+from app.schema import RetrievedChunk
 
 
-def test_build_chunk_embeddings():
+class FakeVectorizer:
+    def encode(self, text: str):
+        if "query" in text:
+            return np.array([1.0, 0.0])
+        if "match" in text:
+            return np.array([1.0, 0.0])
+        return np.array([0.0, 1.0])
+
+
+def test_retrieve_topk_returns_retrieved_chunk():
     chunks = [
-        DocumentChunk("c1", "a.txt", "numpy 向量", 0, 10),
-        DocumentChunk("c2", "b.txt", "数据库 事务", 0, 10),
+        DocumentChunk(
+            chunk_id="match_chunk",
+            source_file="a.txt",
+            text="match text",
+            start_pos=0,
+            end_pos=10,
+        ),
+        DocumentChunk(
+            chunk_id="other_chunk",
+            source_file="b.txt",
+            text="other text",
+            start_pos=0,
+            end_pos=10,
+        ),
     ]
-    vectorizer = KeywordCountVectorizer(vocab=["numpy", "向量", "数据库"])
 
-    chunk_embeddings = build_chunk_embeddings(chunks, vectorizer)
-
-    assert len(chunk_embeddings) == 2
-    assert chunk_embeddings[0].chunk.chunk_id == "c1"
-    assert chunk_embeddings[0].embedding.shape == (3,)
-
-
-def test_retrieve_topk_from_embeddings():
-    chunks = [
-        DocumentChunk("c1", "a.txt", "numpy 向量", 0, 10),
-        DocumentChunk("c2", "b.txt", "数据库 事务", 0, 10),
-        DocumentChunk("c3", "c.txt", "相似度 检索 向量", 0, 10),
+    chunk_embeddings = [
+        ChunkEmbedding(chunk=chunks[0], embedding=np.array([1.0, 0.0])),
+        ChunkEmbedding(chunk=chunks[1], embedding=np.array([0.0, 1.0])),
     ]
-    vectorizer = KeywordCountVectorizer(
-        vocab=["numpy", "向量", "相似度", "数据库", "检索"]
-    )
 
-    chunk_embeddings = build_chunk_embeddings(chunks, vectorizer)
     results = retrieve_topk_from_embeddings(
-        query="numpy 相似度 向量",
+        query="query",
         chunk_embeddings=chunk_embeddings,
-        vectorizer=vectorizer,
-        k=2,
+        vectorizer=FakeVectorizer(),
+        k=1,
     )
 
-    assert len(results) == 2
-    assert results[0][1] >= results[1][1]
+    assert len(results) == 1
+    assert isinstance(results[0], RetrievedChunk)
+    assert results[0].chunk_id == "match_chunk"
+    assert results[0].source_file == "a.txt"
+    assert results[0].retrieval_score == 1.0

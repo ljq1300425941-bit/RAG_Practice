@@ -7,6 +7,15 @@ def parse_args():
     parser.add_argument("--query", type=str, required=True, help="检索查询")
     parser.add_argument("--chunk_size", type=int, default=30, help="chunk 大小")
     parser.add_argument("--overlap", type=int, default=5, help="chunk 重叠长度")
+
+    parser.add_argument(
+        "--splitter",
+        type=str,
+        default="fixed",
+        choices=["fixed", "paragraph", "sentence"],
+        help="chunk 切分策略：fixed / paragraph / sentence",
+    )
+
     parser.add_argument("--top_k", type=int, default=3, help="返回前 k 个结果")
 
     parser.add_argument(
@@ -83,6 +92,14 @@ def parse_args():
         type=str,
         default="BAAI/bge-reranker-base",
         help="reranker 模型名，仅 cross_encoder reranker 生效"
+    )
+
+    parser.add_argument(
+        "--retriever",
+        type=str,
+        default="numpy",
+        choices=["numpy", "faiss"],
+        help="检索后端：numpy / faiss",
     )
 
     return parser.parse_args()

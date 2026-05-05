@@ -1,22 +1,22 @@
 [
   {
     "query": "两个向量相不相近一般看什么指标",
-    "expected_chunk_ids": ["b_chunk_0"]
+    "expected_keywords": ["余弦相似度", "接近程度"]
   },
   {
     "query": "怎么判断检索结果和问题是否相关",
-    "expected_chunk_ids": ["b_chunk_0"]
+    "expected_keywords": ["query", "文档"]
   },
   {
     "query": "Python 做科学计算常用什么库",
-    "expected_chunk_ids": ["a_chunk_0"]
+    "expected_keywords": ["Python", "numpy", "数值计算"]
   },
   {
     "query": "事务在数据库里解决什么问题",
-    "expected_chunk_ids": ["c_chunk_0"]
+    "expected_keywords": ["数据库", "事务"]
   },
   {
     "query": "RAG 里面为什么检索质量会影响回答",
-    "expected_chunk_ids": ["b_chunk_0", "b_chunk_1"]
+    "expected_keywords": ["检索", "query", "文档"]
   }
 ]

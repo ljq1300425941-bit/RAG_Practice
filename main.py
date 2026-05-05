@@ -7,7 +7,17 @@ from app.vectorizer import KeywordCountVectorizer, EmbeddingVectorizer
 from app.prompt_builder import build_rag_prompt
 from app.generator import generate_answer
 from app.reranker import NoOpReranker, CrossEncoderReranker
+from app.retrievers import NumpyRetriever, FaissRetriever
 
+
+def build_retriever(args, chunk_embeddings, vectorizer):
+    if args.retriever == "numpy":
+        return NumpyRetriever(chunk_embeddings, vectorizer)
+
+    if args.retriever == "faiss":
+        return FaissRetriever(chunk_embeddings, vectorizer)
+
+    raise ValueError(f"未知 retriever 类型: {args.retriever}")
 
 def build_vectorizer(args):
     if args.vectorizer == "keyword":
@@ -60,9 +70,11 @@ def main():
         input_dir=input_dir,
         chunk_size=args.chunk_size,
         overlap=args.overlap,
+        splitter_type=args.splitter,
     )
 
     print(f"共构建 {len(chunks)} 个 chunks")
+    print(f"splitter={args.splitter}, chunk_size={args.chunk_size}, overlap={args.overlap}")
 
     vectorizer = build_vectorizer(args)
     chunk_embeddings = build_chunk_embeddings(chunks, vectorizer)
@@ -70,11 +82,11 @@ def main():
     print(f"已预计算 {len(chunk_embeddings)} 个 chunk embeddings")
     print("\n开始处理...\n")
 
-    candidates = retrieve_topk_from_embeddings(
+    retriever = build_retriever(args, chunk_embeddings, vectorizer)
+
+    candidates = retriever.retrieve(
         query=args.query,
-        chunk_embeddings=chunk_embeddings,
-        vectorizer=vectorizer,
-        k=args.retrieve_top_k,
+        top_k=args.retrieve_top_k,
     )
 
     reranker = build_reranker(args)
